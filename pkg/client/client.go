@@ -6,11 +6,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"time"
 )
 
 type Client interface {
+	RequestCode(ctx context.Context, login, password, deviceID string) (*Code, error)
 	Authenticate(ctx context.Context, cpf, password string) error
 	GetEvents(ctx context.Context) (*EventResponse, error)
 }
@@ -60,6 +62,45 @@ func New(opts ...Option) (Client, error) {
 	}
 	c.appLinks, err = c.discoverLinks()
 	return c, err
+}
+
+func (c *client) RequestCode(ctx context.Context, cpf, password, deviceID string) (*Code, error) {
+	cert := &certificateRequest{
+		key1: generateKey(),
+		key2: generateKey(),
+	}
+	cert.payload = map[string]string{
+		"login":             cpf,
+		"password":          password,
+		"public_key":        getPublicKeyPEMStr(cert.key1),
+		"public_key_crypto": getPublicKeyPEMStr(cert.key2),
+		"model":             fmt.Sprintf("GoNubank Client (%s)", deviceID),
+		"device_id":         deviceID,
+	}
+
+	req, err := c.newJSONPostRequest(ctx, c.appLinks["gen_certificate"], cert.payload)
+	if err != nil {
+		return nil, err
+	}
+	response, err := c.doRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	authenticate := response.Header.Get("Www-Authenticate")
+	if response.StatusCode != http.StatusUnauthorized || authenticate == "" {
+		return nil, responseError(response)
+	}
+
+	authData := parseAuthenticateHeader(authenticate)
+	cert.payload["encrypted-code"] = authData["encrypted-code"]
+
+	return &Code{
+		request:     cert,
+		codeReqData: authData,
+		cli:         c,
+	}, err
 }
 
 func (c *client) Authenticate(ctx context.Context, cpf, password string) error {
@@ -179,6 +220,14 @@ func (c *client) doAuthenticatedRequest(req *http.Request) (*http.Response, erro
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.auth.AccessToken))
 	return c.httpClient.Do(req)
+}
+
+func responseError(response *http.Response) error {
+	raw, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+	return fmt.Errorf("[%d] - %s", response.StatusCode, string(raw))
 }
 
 type linkRef struct {

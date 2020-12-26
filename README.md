@@ -8,6 +8,14 @@ Based on https://github.com/andreroggeri/pynubank
 
 * **Currently only supports authentication with certificates and can only get the list of events from your account**
 
+## Generating certificate for authentication
+
+You can use the this package as a cli to generate the certificate, like:
+
+```sh
+go run cmd/nubank-cli/main.go
+```
+
 ## Usage
 
 ```go
