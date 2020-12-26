@@ -227,7 +227,7 @@ func responseError(response *http.Response) error {
 	if err != nil {
 		return err
 	}
-	return fmt.Errorf("[%d] - %s", response.StatusCode, string(raw))
+	return fmt.Errorf("%w: [%d] - %s", ErrStatusCodeUnexpected, response.StatusCode, string(raw))
 }
 
 type linkRef struct {
