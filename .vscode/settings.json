@@ -1,0 +1,29 @@
+{
+  "telemetry.enableTelemetry": false,
+  "go.lintTool": "golangci-lint",
+  "go.useLanguageServer": true,
+  "[go]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    },
+    // Optional: Disable snippets, as they conflict with completion ranking.
+    "editor.snippetSuggestions": "none"
+  },
+  "[go.mod]": {
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+      "source.organizeImports": true
+    }
+  },
+  "gopls": {
+    "local": "github.com/eberlitz/go-nubank",
+    // Add parameter placeholders when completing a function.
+    "usePlaceholders": true,
+
+    // If true, enable additional analyses with staticcheck.
+    // Warning: This will significantly increase memory usage.
+    "staticcheck": false
+  },
+  "go.formatTool": "goimports"
+}
