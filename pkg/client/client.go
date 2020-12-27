@@ -15,6 +15,7 @@ type Client interface {
 	RequestCode(ctx context.Context, login, password, deviceID string) (*Code, error)
 	Authenticate(ctx context.Context, cpf, password string) error
 	GetEvents(ctx context.Context) (*EventResponse, error)
+	GetAccountFeed(ctx context.Context) ([]Feed, error)
 }
 
 type client struct {
@@ -157,6 +158,34 @@ func (c *client) GetEvents(ctx context.Context) (*EventResponse, error) {
 	var responseData *EventResponse
 	err = json.NewDecoder(response.Body).Decode(&responseData)
 	return responseData, err
+}
+
+func (c *client) GetAccountFeed(ctx context.Context) ([]Feed, error) {
+	href := c.appLinks["ghostflame"]
+
+	req, err := c.newJSONPostRequest(ctx, href, map[string]interface{}{
+		"variables": struct{}{},
+		"query":     accountFeedQuery,
+	})
+	if err != nil {
+		return nil, err
+	}
+	response, err := c.doAuthenticatedRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: Got %d, Want %d", ErrStatusCodeUnexpected, response.StatusCode, http.StatusOK)
+	}
+
+	var responseData *AccountFeedResponse
+	err = json.NewDecoder(response.Body).Decode(&responseData)
+	if err != nil {
+		return nil, err
+	}
+	return responseData.Data.Viewer.SavingsAccount.Feed, nil
 }
 
 func (c *client) discoverLinks() (map[string]string, error) {
