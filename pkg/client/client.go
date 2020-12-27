@@ -245,7 +245,7 @@ type authResponse struct {
 type EventResponse struct {
 	Events     []EventElement     `json:"events"`
 	CustomerID string             `json:"customer_id"`
-	AsOf       string             `json:"as_of"`
+	AsOf       time.Time          `json:"as_of"`
 	Links      EventResponseLinks `json:"_links"`
 }
 
@@ -253,7 +253,7 @@ type EventElement struct {
 	Description      *string     `json:"description,omitempty"`
 	Category         Category    `json:"category"`
 	Amount           *int64      `json:"amount,omitempty"`
-	Time             string      `json:"time"`
+	Time             time.Time   `json:"time"`
 	Source           *Source     `json:"source,omitempty"`
 	Title            string      `json:"title"`
 	AmountWithoutIof *int64      `json:"amount_without_iof,omitempty"`
